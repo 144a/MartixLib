@@ -224,7 +224,7 @@ class Matrix {
   }
   
   public Matrix inverse() {
-    double[][] ret = new double[this
+    // double[][] ret = new double[this
     
     
     return new Matrix(ret);
