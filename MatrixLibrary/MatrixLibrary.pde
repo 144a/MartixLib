@@ -60,6 +60,17 @@ class Matrix {
     }
   }
   
+  
+  public double[] rowGet(int r, int mult) {
+    double[] ret = new double[this.numOfCols()];
+    for(int i = 0; i < array[0].length; i++) {
+      ret[i] = array[r][i] * mult;
+    }
+    return ret;
+  }
+  
+  
+  
   public double getVal(int r, int c) {
     if(!(r >= 0 && r < this.numOfRows()) || !(c >= 0 && c < numOfCols())) {
       return -999999;
@@ -96,39 +107,94 @@ class Matrix {
   
   // Row Echelon Form
   public void ref() {
-    for(int i = 0; i < array[0].length - 1; i++) {
+    double coef;
+    // Step through each row (excluding the last one)
+    for(int i = 0; i < array.length - 1; i++) {
+      
+      // Check to see if we have a zero in the first spot
+      int temp = 0;
+      boolean t = false;
+      if(array[i][i] == 0) {
+        t = true;
+        // If so, search for the first non-zero spot along the same column
+        for(int n = i + 1; n < array.length; n++) {
+          if(t && array[n][i] != 0){
+            temp = n;
+            t = false;
+          }
+        }
+        // If the search was unsuccessful, return with current total operation
+        if(t) {
+          return;
+        }
+        
+        // Otherwise, swap rows and continue operation 
+        this.rowSwap(i, temp);
+      }
+      
+      // Ensure that first spot is 1 
+      if(array[i][i] != 1) {
+        // Divide entire array by first number to simply coeficient
+        double c = array[i][i];
+        for(int n = i; n < array[0].length; n++) {
+          array[i][n] = array[i][n]/c;  
+        }
+      }
+      
+      // Step through each row after the current row
       for(int j = i + 1; j < array.length; j++) {
-        double coef = 0;
+        // println("i=" + i + " j=" + j);
+        // Check to see if row operation is needed 
         if(array[j][i] != 0) {
-          coef = (array[j][i] / array[i][i]) * -1; 
+          // println(array[j][i] + " " + array[i][i] + "  i=" + i + " j=" + j);
+          // Apply row operation to zero position
+          coef = array[j][i] * -1;
           for(int n = i; n < array[0].length; n++) {
-            array[j][n] += coef * array[i][n];
+            array[j][n] = coef * array[i][n] + array[j][n];  
           }
         }
       }
-    }  
+    }
+    
+    // Finally, simplify final row (if needed)
+    if(array[array.length - 1][array.length - 1] != 1) {
+      // Divide entire array by first number to simply coeficient
+      double c = array[array.length - 1][array.length - 1];
+      for(int n = array.length - 1; n < array[0].length; n++) {
+        array[array.length - 1][n] = array[array.length - 1][n]/c;  
+      }
+    }
   }
   
   // Reduced Row Echelon Form
   public void rref() {
+    // Arrange Array into Row Echelon Form
     this.ref();
-    for(int j = array[0].length - 2; j >= 0; j--) {
-      for(int n = j - 1; n >= 0; n--) {
-        array[j][array[0].length - 1] /= array[j][j];
-        array[j][j] = 1;
-        // this.printM();
-        // println("");
-        array[n][array[0].length - 1] += array[n][j] * array[j][(array[0].length - 1)] * -1;
-        // println(array[n][j] * array[j][(array[0].length - 1)]);
-        array[n][j] = 0;
+    
+    // Start running through rows from bottom -> up
+    for(int i = array.length - 1; i > 0; i--) {
+      
+      // Check to see if first number isnt 0
+      if(array[i][i] == 0) {
+        // If not, then return with current total operation
+        return;
+      }
+      
+      // Run through the column
+      for(int j = i - 1; j >= 0; j--) {
+        // Check to see if spot is 0
+        if(array[j][i] != 0) {
+          // Apply Row Operation
+          double coef = array[j][i] * -1;
+          for(int n = i; n < array[0].length; n++) {
+            array[j][n] = array[j][n] + coef * array[i][n];
+          }
+          
+        }
       }
     }
-    // Final Check for simplification
-    for(int i = array.length - 1; i >= 0; i--) {
-      array[i][array[0].length - 1] /= array[i][i];
-      array[i][i] = 1;
-    }
-    // array[i][array[0].length - 1] += array[i+1][array[0].length - 1] * array[i][i+1];
+    return;
+    
   }
   
   public boolean add(Matrix input) {
@@ -224,8 +290,39 @@ class Matrix {
   }
   
   public Matrix inverse() {
-    // double[][] ret = new double[this
+    // Check to see if inverse is even possible
+    if(array.length != array[0].length) {
+      println("Error: not a sqaure Matrix; Inverse Failed");
+      return null;
+    }
     
+    // Build matrix for RREF
+    double[][] arr = new double[array.length][2 * array[0].length];
+    
+    // Enter in matrix data
+    for(int i = 0; i < array.length; i++) {
+      for(int j = 0; j < array[0].length; j++) {
+        arr[i][j] = array[i][j];
+        // Add in 1s as necessary to set up identity)
+        if(i == j) {
+          arr[i][j + array[0].length] = 1;
+        }
+      }
+    }
+    
+    // Make Temporary Matrix
+    Matrix temp = new Matrix(arr);
+    
+    // Run RREF
+    temp.rref();
+    
+    // Create new return array
+    double[][] ret = new double[array.length][array[0].length];
+    for(int i = 0; i < array.length; i++) {
+      for(int j = 0; j < array[0].length; j++) {
+        ret[i][j] = temp.getVal(i, j + array[0].length);
+      }
+    }
     
     return new Matrix(ret);
   }
